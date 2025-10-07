@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6">
+        <h3 class="mb-4">Create Your Thumbnail</h3>
+        <form id="thumbnailForm">
+            <div class="mb-3">
+                <label for="prompt" class="form-label">Enter your thumbnail prompt:</label>
+                <textarea 
+                    class="form-control" 
+                    id="prompt" 
+                    name="prompt" 
+                    rows="3" 
+                    placeholder="e.g., Quiz: Guess the Country by Emoji"
+                    maxlength="200"
+                    required
+                ></textarea>
+                <div class="form-text">
+                    <span id="charCount">0</span>/200 characters
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-primary btn-lg w-100" id="generateBtn">
+                <i class="fas fa-magic me-2"></i>
+                Generate Thumbnail
+            </button>
+        </form>
+        
+        <div class="loading-spinner text-center mt-4" id="loadingSpinner">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Generating...</span>
+            </div>
+            <p class="mt-2">Creating your thumbnail...</p>
+        </div>
+        
+        <div id="resultContainer" class="preview-container" style="display: none;">
+            <div id="alertContainer"></div>
+            <div id="thumbnailPreview"></div>
+            <div id="downloadSection" style="display: none;">
+                <a href="#" id="downloadLink" class="btn btn-success btn-lg mt-3">
+                    <i class="fas fa-download me-2"></i>
+                    Download Thumbnail
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <h3 class="mb-4">Features</h3>
+        <ul class="feature-list">
+            <li>
+                <i class="fas fa-check-circle"></i>
+                <strong>1280×720 Resolution:</strong> Perfect YouTube thumbnail size
+            </li>
+            <li>
+                <i class="fas fa-check-circle"></i>
+                <strong>AI-Generated Backgrounds:</strong> Using DALL-E 3 for stunning visuals
+            </li>
+            <li>
+                <i class="fas fa-check-circle"></i>
+                <strong>Smart Text Overlay:</strong> Bold, readable text with perfect contrast
+            </li>
+            <li>
+                <i class="fas fa-check-circle"></i>
+                <strong>Quality Control:</strong> No spelling errors or text artifacts
+            </li>
+            <li>
+                <i class="fas fa-check-circle"></i>
+                <strong>Multiple Styles:</strong> Automatic styling based on content type
+            </li>
+            <li>
+                <i class="fas fa-check-circle"></i>
+                <strong>Instant Download:</strong> Get your thumbnail ready to use
+            </li>
+        </ul>
+        
+        <div class="mt-4">
+            <h5>Example Prompts:</h5>
+            <div class="d-flex flex-wrap gap-2">
+                <span class="badge bg-light text-dark">Quiz: Guess the Country by Emoji</span>
+                <span class="badge bg-light text-dark">Only 1% Can Solve This Riddle</span>
+                <span class="badge bg-light text-dark">Challenge: Find the Hidden Object</span>
+                <span class="badge bg-light text-dark">Test Your Knowledge</span>
+            </div>
+        </div>
+        
+        <div class="mt-4 p-3 bg-light rounded">
+            <h6><i class="fas fa-info-circle text-primary me-2"></i>Tips for Best Results:</h6>
+            <ul class="mb-0 small">
+                <li>Keep prompts under 50 characters for best text display</li>
+                <li>Use action words like "Quiz", "Challenge", "Test"</li>
+                <li>Be specific about the content type</li>
+                <li>Avoid special characters and symbols</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('thumbnailForm');
+    const promptTextarea = document.getElementById('prompt');
+    const charCount = document.getElementById('charCount');
+    const generateBtn = document.getElementById('generateBtn');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const resultContainer = document.getElementById('resultContainer');
+    const alertContainer = document.getElementById('alertContainer');
+    const thumbnailPreview = document.getElementById('thumbnailPreview');
+    const downloadSection = document.getElementById('downloadSection');
+    const downloadLink = document.getElementById('downloadLink');
+    
+    // Character counter
+    promptTextarea.addEventListener('input', function() {
+        const count = this.value.length;
+        charCount.textContent = count;
+        
+        if (count > 180) {
+            charCount.style.color = '#dc3545';
+        } else if (count > 150) {
+            charCount.style.color = '#ffc107';
+        } else {
+            charCount.style.color = '#6c757d';
+        }
+    });
+    
+    // Form submission
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const prompt = promptTextarea.value.trim();
+        if (!prompt) {
+            showAlert('Please enter a prompt', 'danger');
+            return;
+        }
+        
+        if (prompt.length > 200) {
+            showAlert('Prompt is too long (max 200 characters)', 'danger');
+            return;
+        }
+        
+        // Show loading state
+        generateBtn.disabled = true;
+        generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Generating...';
+        loadingSpinner.style.display = 'block';
+        resultContainer.style.display = 'none';
+        
+        try {
+            const response = await fetch('/generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ prompt: prompt })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok && data.success) {
+                showAlert('Thumbnail generated successfully!', 'success');
+                
+                // Show actual thumbnail preview
+                thumbnailPreview.innerHTML = `
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle me-2"></i>
+                        Thumbnail generated successfully!
+                    </div>
+                    <div class="text-center">
+                        <img src="/download/${data.filename}" alt="Generated Thumbnail" class="thumbnail-preview img-fluid rounded shadow" style="max-width: 100%; height: auto;">
+                        <p class="mt-2 text-muted">${data.filename}</p>
+                    </div>
+                `;
+                
+                // Set up download link
+                downloadLink.href = `/download/${data.filename}`;
+                downloadSection.style.display = 'block';
+                
+            } else {
+                showAlert(data.error || 'Failed to generate thumbnail', 'danger');
+            }
+            
+        } catch (error) {
+            console.error('Error:', error);
+            showAlert('Network error. Please try again.', 'danger');
+        } finally {
+            // Reset loading state
+            generateBtn.disabled = false;
+            generateBtn.innerHTML = '<i class="fas fa-magic me-2"></i>Generate Thumbnail';
+            loadingSpinner.style.display = 'none';
+            resultContainer.style.display = 'block';
+        }
+    });
+    
+    function showAlert(message, type) {
+        alertContainer.innerHTML = `
+            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2"></i>
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+    }
+    
+    // Add click handlers for example prompts
+    document.querySelectorAll('.badge').forEach(badge => {
+        badge.style.cursor = 'pointer';
+        badge.addEventListener('click', function() {
+            promptTextarea.value = this.textContent;
+            promptTextarea.dispatchEvent(new Event('input'));
+        });
+    });
+});
+</script>
+{% endblock %}

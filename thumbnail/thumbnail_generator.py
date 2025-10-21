@@ -508,12 +508,13 @@ class ThumbnailGenerator:
             logger.info(f"🔗 Endpoint: {self.azure_endpoint_dalle}")
             logger.info(f"🔑 API Key: {'Set' if self.azure_api_key else 'Not set'}")
             
-            # Create a prompt for background generation with quality safeguards
-            bg_prompt = f"Create a vibrant, engaging background for a YouTube thumbnail about: {prompt}. " \
-                       f"Style: modern, bright colors, abstract design, no text, no people, no faces, no hands, " \
-                       f"suitable for overlay text. Format: landscape, 16:9 aspect ratio. " \
-                       f"Requirements: high quality, no artifacts, no distortions, clean abstract patterns, " \
-                       f"professional design, smooth gradients, geometric shapes, no realistic objects."
+            # Create a prompt for realistic background generation (content-filter safe)
+            bg_prompt = f"Create a beautiful landscape background for a YouTube thumbnail about: {prompt}. " \
+                       f"Style: natural lighting, soft textures, muted colors, clean composition, " \
+                       f"no text, no people, no faces, no hands, suitable for overlay text. " \
+                       f"Format: landscape, 16:9 aspect ratio. " \
+                       f"Requirements: high quality, peaceful environment, natural setting, " \
+                       f"gentle lighting, outdoor scene, professional design."
             
             # Direct REST API call (exactly like your curl command)
             url = f"{self.azure_endpoint_dalle}/openai/deployments/{self.azure_deployment}/images/generations?api-version=2024-02-01"
@@ -527,8 +528,8 @@ class ThumbnailGenerator:
                 "model": "dall-e-3",
                 "prompt": bg_prompt,
                 "size": "1024x1024",
-                "style": "vivid",
-                "quality": "standard",
+                "style": "natural",
+                "quality": "hd",
                 "n": 1
             }
             
